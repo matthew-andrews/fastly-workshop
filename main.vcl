@@ -1,5 +1,33 @@
+backend next_next_ft_us_herokuapp_com {
+	.connect_timeout = 1s;
+	.dynamic = true;
+	.port = "80";
+	.host = "next-next-ft-us.herokuapp.com";
+	.first_byte_timeout = 15s;
+	.max_connections = 200;
+	.between_bytes_timeout = 10s;
+	.share_key = "6TquV5hGGuFYfIDQumwitW";
+
+	.probe = {
+		# ADDED: User-Agent to aide debugging and to be a good citizen
+		.request = "HEAD /__gtg HTTP/1.1"  "Host: next-next-ft-us.herokuapp.com" "Connection: close" "User-Agent: Varnish/fastly (healthcheck)";
+		.window = 5;
+		.threshold = 1;
+		.timeout = 2s;
+		.initial = 5;
+		# REMOVED .dummy, added expected response and interval to make the probe real
+		.expected_response = 200;
+		.interval = 30s;
+	  }
+}
+
 sub vcl_recv {
 #FASTLY recv
+
+	# ADDED: Set the backend 
+	set req.backend = next_next_ft_us_herokuapp_com;
+	# ADDED: Set host_header to trick Heroku
+	set req.http.Host = "next-next-ft-us.herokuapp.com";
 
 	if (req.request != "HEAD" && req.request != "GET" && req.request != "FASTLYPURGE") {
 	  return(pass);
