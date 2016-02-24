@@ -42,6 +42,10 @@ backend even_faster_ft {
 
 sub vcl_recv {
 #FASTLY recv
+	# Force SSL
+	if (!req.http.Fastly-SSL) {
+		error 801 "Force TLS";
+	}
 
 	if (req.url ~ "^\/evenfasterft") {
 		set req.backend = even_faster_ft;
@@ -52,7 +56,7 @@ sub vcl_recv {
 	}
 
 	if (req.request != "HEAD" && req.request != "GET" && req.request != "FASTLYPURGE") {
-	  return(pass);
+		return(pass);
 	}
 
 	return(lookup);
@@ -117,6 +121,13 @@ sub vcl_deliver {
 
 sub vcl_error {
 #FASTLY error
+	if (obj.status == 801) {
+		set obj.status = 301;
+		set obj.response = "Moved Permanently";
+		set obj.http.Location = "https://" req.http.host req.url;
+		synthetic {""};
+		return (deliver);
+	}
 }
 
 sub vcl_pass {
